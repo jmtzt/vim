@@ -120,6 +120,9 @@ vim.opt.timeoutlen = 300
 --
 -- NORMAL Mode remaps
 --
+-- quickfix navigation
+vim.keymap.set('n', '<leader>j', '<cmd>cnext<CR>', { desc = 'Next quickfix item' })
+vim.keymap.set('n', '<leader>k', '<cmd>cprev<CR>', { desc = 'Previous quickfix item' })
 
 -- Save the current file with Ctrl+S
 vim.keymap.set('n', '<C-s>', ':w<CR>', { desc = 'Save file' })
