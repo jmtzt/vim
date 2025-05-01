@@ -123,6 +123,9 @@ vim.opt.timeoutlen = 300
 -- quickfix navigation
 vim.keymap.set('n', '<leader>j', '<cmd>cnext<CR>', { desc = 'Next quickfix item' })
 vim.keymap.set('n', '<leader>k', '<cmd>cprev<CR>', { desc = 'Previous quickfix item' })
+--
+-- Disable the default behavior of `s` in normal mode due to mini.surround.nvim
+vim.keymap.set({ 'n', 'x' }, 's', '<Nop>')
 
 -- Save the current file with Ctrl+S
 vim.keymap.set('n', '<C-s>', ':w<CR>', { desc = 'Save file' })
@@ -1249,7 +1252,7 @@ require('lazy').setup({
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
       --
       -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
-      -- - sd'   - [S]urround [D]elete [']quotes
+      -- - sd'   - [S]urround [D]elete [']quotes ''
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
 
