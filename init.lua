@@ -179,6 +179,13 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+-- LeetCode.nvim
+vim.keymap.set('n', '<leader>lr', '<cmd>Leet run<cr>', { desc = 'Run Leetcode' })
+vim.keymap.set('n', '<leader>ls', '<cmd>Leet submit<cr>', { desc = 'Submit Leetcode' })
+vim.keymap.set('n', '<leader>ld', '<cmd>Leet desc<cr>', { desc = 'Description Leetcode' })
+vim.keymap.set('n', '<leader>ll', '<cmd>Leet<cr>', { desc = 'Leetcode' })
+vim.keymap.set('n', '<leader>lv', '<cmd>LspRestart<cr>', { desc = 'Restart LSP' })
+
 --
 -- INSERT Mode remaps
 --
@@ -238,6 +245,8 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
+-- TODO: Add LeetCode.nvim
+--
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -457,6 +466,36 @@ require('lazy').setup({
         }
       end
     end,
+  },
+  {
+    'kawre/leetcode.nvim',
+    build = ':TSUpdate html',
+    dependencies = {
+      'nvim-telescope/telescope.nvim',
+      'nvim-lua/plenary.nvim', -- required by telescope
+      'MunifTanjim/nui.nvim',
+
+      -- optional
+      'nvim-treesitter/nvim-treesitter',
+      'rcarriga/nvim-notify',
+      'nvim-tree/nvim-web-devicons',
+    },
+    opts = {
+      -- configuration goes here
+      lang = 'python3',
+      storage = {
+        home = '/Users/c0mrade/personal/projects/leetcode/leetcode.nvim',
+        cache = '/Users/c0mrade/personal/projects/leetcode/leetcode.nvim.cache',
+      },
+      injector = {
+        ['python3'] = {
+          before = true,
+        },
+      },
+      description = {
+        width = '30%',
+      },
+    },
   },
   {
     'nvim-neotest/neotest',
@@ -687,6 +726,7 @@ require('lazy').setup({
         { '<leader>n', group = '[N]eotest' },
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>t', group = '[T]oggle' },
+        { '<leader>l', group = '[L]eetCode' },
       },
     },
   },
@@ -960,6 +1000,32 @@ require('lazy').setup({
       --  So, we create new capabilities with nvim cmp, and then broadcast that to the servers.
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
+      -- setup pyright with completion capabilities
+      require('lspconfig').pyright.setup {
+        capabilities = capabilities,
+        settings = {
+          pyright = {
+            -- Using Ruff's import organizer
+            disableOrganizeImports = true,
+          },
+          python = {
+            analysis = {
+              -- Ignore all files for analysis to exclusively use Ruff for linting
+              ignore = { '*' },
+            },
+          },
+        },
+      }
+
+      -- ruff uses an LSP proxy, therefore it needs to be enabled as if it
+      -- were a LSP. In practice, ruff only provides linter-like diagnostics
+      -- and some code actions, and is not a full LSP yet.
+      require('lspconfig').ruff.setup {
+        -- disable ruff as hover provider to avoid conflicts with pyright
+        on_attach = function(client)
+          client.server_capabilities.hoverProvider = false
+        end,
+      }
 
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -1086,7 +1152,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        python = { 'isort', 'black' },
+        python = { 'isort', 'ruff_format' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
