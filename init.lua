@@ -120,6 +120,46 @@ vim.opt.timeoutlen = 300
 --
 -- NORMAL Mode remaps
 --
+--
+-- Maps <leader>tt to create a new todo entry
+vim.keymap.set('n', '<leader>tt', function()
+  -- 1. Get today's date formatted as YYYY-MM-DD
+  local currentDate = os.date '%Y-%m-%d'
+
+  -- 2. Construct the text for the new line
+  local newLine = '[ ] ' .. currentDate .. ' ' .. currentDate .. ' '
+
+  -- 3. Get the current cursor's line number
+  local lnum = vim.api.nvim_win_get_cursor(0)[1]
+
+  -- 4. Insert the new line of text below the current line
+  vim.api.nvim_buf_set_lines(0, lnum, lnum, false, { newLine })
+
+  -- 5. Move the cursor to the end of the newly inserted line
+  vim.api.nvim_win_set_cursor(0, { lnum + 1, #newLine })
+
+  -- 6. Enter insert mode
+  vim.cmd 'startinsert'
+end, { desc = 'Add new todo task entry' })
+
+-- Maps <leader>td to toggle the todo item's done status
+vim.keymap.set('n', '<leader>td', function()
+  -- 1. Get the content of the current line
+  local line = vim.api.nvim_get_current_line()
+
+  -- 2. Check if the line starts with a checked box '[x]'
+  if line:match '^%[x%]' then
+    -- If so, replace it with an empty box '[ ]'
+    local modifiedLine = line:gsub('^%[x%]', '[ ]')
+    vim.api.nvim_set_current_line(modifiedLine)
+  -- 3. Otherwise, check if the line starts with an empty box '[ ]'
+  elseif line:match '^%[ %]' then
+    -- If so, replace it with a checked box '[x]'
+    local modifiedLine = line:gsub('^%[ %]', '[x]')
+    vim.api.nvim_set_current_line(modifiedLine)
+  end
+end, { desc = 'Toggle todo done status' })
+
 -- quickfix navigation
 vim.keymap.set('n', '<leader>j', '<cmd>cnext<CR>', { desc = 'Next quickfix item' })
 vim.keymap.set('n', '<leader>k', '<cmd>cprev<CR>', { desc = 'Previous quickfix item' })
@@ -259,6 +299,71 @@ vim.opt.rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
+  {
+    'folke/sidekick.nvim',
+    opts = {
+      -- add any options here
+      cli = {
+        mux = {
+          backend = 'tmux',
+          enabled = true,
+        },
+      },
+    },
+    keys = {
+      {
+        '<tab>',
+        function()
+          -- if there is a next edit, jump to it, otherwise apply it if any
+          if not require('sidekick').nes_jump_or_apply() then
+            return '<Tab>' -- fallback to normal tab
+          end
+        end,
+        expr = true,
+        desc = 'Goto/Apply Next Edit Suggestion',
+      },
+      {
+        '<c-.>',
+        function()
+          require('sidekick.cli').focus()
+        end,
+        mode = { 'n', 'x', 'i', 't' },
+        desc = 'Sidekick Switch Focus',
+      },
+      {
+        '<leader>aa',
+        function()
+          require('sidekick.cli').toggle { focus = true }
+        end,
+        desc = 'Sidekick Toggle CLI',
+        mode = { 'n', 'v' },
+      },
+      {
+        '<leader>ac',
+        function()
+          require('sidekick.cli').toggle { name = 'claude', focus = true }
+        end,
+        desc = 'Sidekick Claude Toggle',
+        mode = { 'n', 'v' },
+      },
+      {
+        '<leader>ag',
+        function()
+          require('sidekick.cli').toggle { name = 'grok', focus = true }
+        end,
+        desc = 'Sidekick Grok Toggle',
+        mode = { 'n', 'v' },
+      },
+      {
+        '<leader>ap',
+        function()
+          require('sidekick.cli').select_prompt()
+        end,
+        desc = 'Sidekick Ask Prompt',
+        mode = { 'n', 'v' },
+      },
+    },
+  },
   {
     'ThePrimeagen/harpoon',
     branch = 'harpoon2',
@@ -670,8 +775,7 @@ require('lazy').setup({
       -- see: https://github.com/rcarriga/nvim-dap-ui/issues/279#issuecomment-1596258077
       require('dapui').setup()
       -- uses the debugypy installation by mason
-      local debugpyPythonPath = require('mason-registry').get_package('debugpy'):get_install_path() .. '/venv/bin/python3'
-      require('dap-python').setup(debugpyPythonPath, {}) ---@diagnostic disable-line: missing-fields
+      require('dap-python').setup 'uv'
     end,
   },
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
@@ -741,7 +845,8 @@ require('lazy').setup({
         { '<leader>s', group = '[S]earch' },
         { '<leader>n', group = '[N]eotest' },
         { '<leader>w', group = '[W]orkspace' },
-        { '<leader>t', group = '[T]oggle' },
+        { '<leader>t', group = '[T]odo' },
+        { '<leader>a', group = '[A]idekick' },
         { '<leader>l', group = '[L]eetCode' },
       },
     },
@@ -973,11 +1078,11 @@ require('lazy').setup({
           -- code, if the language server you are using supports them
           --
           -- This may be unwanted, since they displace some of your code
-          if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf) then
-            map('<leader>th', function()
-              vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
-            end, '[T]oggle Inlay [H]ints')
-          end
+          -- if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf) then
+          --   map('<leader>th', function()
+          --     vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
+          --   end, '[T]oggle Inlay [H]ints')
+          -- end
         end,
       })
 
@@ -1017,31 +1122,65 @@ require('lazy').setup({
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
       -- setup pyright with completion capabilities
-      require('lspconfig').pyright.setup {
+      vim.lsp.config('pyright', {
         capabilities = capabilities,
         settings = {
-          pyright = {
-            -- Using Ruff's import organizer
-            disableOrganizeImports = true,
-          },
           python = {
+            pyright = {
+              -- Using Ruff's import organizer
+              disableOrganizeImports = true,
+            },
             analysis = {
-              -- Ignore all files for analysis to exclusively use Ruff for linting
-              ignore = { '*' },
+              useLibraryCodeForTypes = true,
+              diagnosticSeverityOverrides = {
+                reportUnusedVariable = 'warning',
+              },
+              typeCheckingMode = 'off', -- Set type-checking mode to off
+              diagnosticMode = 'off', -- Disable diagnostics entirely
             },
           },
         },
-      }
+        -- settings = {
+        --   pyright = {
+        --     -- Using Ruff's import organizer
+        --     disableOrganizeImports = true,
+        --   },
+        --   python = {
+        --     analysis = {
+        --       -- Ignore all files for analysis to exclusively use Ruff for linting
+        --       ignore = { '*' },
+        --     },
+        --   },
+        -- },
+      })
 
       -- ruff uses an LSP proxy, therefore it needs to be enabled as if it
       -- were a LSP. In practice, ruff only provides linter-like diagnostics
       -- and some code actions, and is not a full LSP yet.
-      require('lspconfig').ruff.setup {
-        -- disable ruff as hover provider to avoid conflicts with pyright
-        on_attach = function(client)
+      local on_attach_ruff = function(client, _)
+        if client.name == 'ruff' then
+          -- disable hover in favor of pyright
           client.server_capabilities.hoverProvider = false
-        end,
-      }
+        end
+      end
+      vim.lsp.config('ruff', {
+        -- disable ruff as hover provider to avoid conflicts with pyright
+        on_attach = on_attach_ruff,
+        init_options = {
+          settings = {
+            args = {
+              '--ignore',
+              'F821',
+              '--ignore',
+              'E402',
+              '--ignore',
+              'E722',
+              '--ignore',
+              'E712',
+            },
+          },
+        },
+      })
 
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -1128,7 +1267,8 @@ require('lazy').setup({
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for ts_ls)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
+            --require('lspconfig')[server_name].setup(server)
+            vim.lsp.config(server_name, server)
           end,
         },
       }
