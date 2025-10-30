@@ -731,7 +731,7 @@ require('lazy').setup({
   -- * terminate the debugger `<leader>dt`
   {
     'mfussenegger/nvim-dap',
-    dependencies = { 'jay-bubu/mason-nvim-dap.nvim', 'theHamsta/nvim-dap-virtual-text' },
+    dependencies = { 'theHamsta/nvim-dap-virtual-text' },
     keys = {
       {
         '<leader>dc',
@@ -756,6 +756,7 @@ require('lazy').setup({
       },
     },
   },
+  { 'jay-babu/mason-nvim-dap.nvim' },
 
   -- UI for the debugger
   -- * the debugger UI is also automatically opened when starting/stopping the debugger
