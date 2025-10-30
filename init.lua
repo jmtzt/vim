@@ -285,6 +285,28 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
+local function project_root(markers)
+  local bufname = vim.api.nvim_buf_get_name(0)
+  local start = (bufname ~= '' and vim.fs.dirname(bufname)) or vim.loop.cwd()
+  local found = vim.fs.find(markers, { upward = true, path = start })[1]
+  return found and vim.fs.dirname(found) or vim.loop.cwd()
+end
+
+-- Helper: prefer venv's python (VIRTUAL_ENV or .venv), fallback to `python`
+local function venv_python()
+  if vim.env.VIRTUAL_ENV then
+    local py = vim.env.VIRTUAL_ENV .. '/bin/python'
+    if vim.fn.executable(py) == 1 then
+      return py
+    end
+  end
+  local venv = project_root { 'pyproject.toml', 'ruff.toml', 'setup.cfg', '.git' } .. '/.venv/bin/python'
+  if vim.fn.executable(venv) == 1 then
+    return venv
+  end
+  return 'python'
+end
+
 -- TODO: Add LeetCode.nvim
 --
 -- [[ Configure and install plugins ]]
@@ -709,6 +731,7 @@ require('lazy').setup({
   -- * terminate the debugger `<leader>dt`
   {
     'mfussenegger/nvim-dap',
+    dependencies = { 'jay-bubu/mason-nvim-dap.nvim', 'theHamsta/nvim-dap-virtual-text' },
     keys = {
       {
         '<leader>dc',
@@ -1308,10 +1331,21 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        python = { 'isort', 'ruff_format' },
+        python = { 'isort', 'ruff_format_module' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      },
+      formatters = {
+        ruff_format_module = {
+          command = venv_python,
+          args = { '-m', 'ruff', 'format', '--stdin-filename', '$FILENAME', '-' },
+          stdin = true,
+          cwd = function(_)
+            return project_root { 'pyproject.toml', 'ruff.toml', '.git' }
+          end,
+          require_cwd = true,
+        },
       },
     },
   },
