@@ -790,17 +790,17 @@ require('lazy').setup({
   -- Configuration for the python debugger
   -- * configures debugpy for us
   -- * uses the debugpy installation from mason
-  {
-    'mfussenegger/nvim-dap-python',
-    dependencies = 'mfussenegger/nvim-dap',
-    config = function()
-      -- fix: E5108: Error executing lua .../Local/nvim-data/lazy/nvim-dap-ui/lua/dapui/controls.lua:14: attempt to index local 'element' (a nil value)
-      -- see: https://github.com/rcarriga/nvim-dap-ui/issues/279#issuecomment-1596258077
-      require('dapui').setup()
-      -- uses the debugypy installation by mason
-      require('dap-python').setup 'uv'
-    end,
-  },
+  -- {
+  --   'mfussenegger/nvim-dap-python',
+  --   dependencies = 'mfussenegger/nvim-dap',
+  --   config = function()
+  --     -- fix: E5108: Error executing lua .../Local/nvim-data/lazy/nvim-dap-ui/lua/dapui/controls.lua:14: attempt to index local 'element' (a nil value)
+  --     -- see: https://github.com/rcarriga/nvim-dap-ui/issues/279#issuecomment-1596258077
+  --     require('dapui').setup()
+  --     -- uses the debugypy installation by mason
+  --     require('dap-python').setup 'uv'
+  --   end,
+  -- },
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
     opts = {
