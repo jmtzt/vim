@@ -757,6 +757,13 @@ require('lazy').setup({
         end,
         desc = 'Terminate Debugger',
       },
+      {
+        '<leader>dl',
+        function()
+          require('dap').clear_breakpoints()
+        end,
+        desc = 'Clear breakpoints',
+      },
     },
     config = function()
       local dap = require 'dap'
