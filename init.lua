@@ -321,6 +321,9 @@ end
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
+  rocks = {
+    enbaled = false,
+  },
   {
     'folke/sidekick.nvim',
     opts = {
@@ -731,7 +734,7 @@ require('lazy').setup({
   -- * terminate the debugger `<leader>dt`
   {
     'mfussenegger/nvim-dap',
-    dependencies = { 'theHamsta/nvim-dap-virtual-text' },
+    dependencies = { 'theHamsta/nvim-dap-virtual-text', 'mfussenegger/nvim-dap-python', 'jay-babu/mason-nvim-dap.nvim' },
     keys = {
       {
         '<leader>dc',
@@ -755,8 +758,37 @@ require('lazy').setup({
         desc = 'Terminate Debugger',
       },
     },
+    config = function()
+      local dap = require 'dap'
+      local dapui = require 'dapui'
+
+      require('mason-nvim-dap').setup {
+        -- Makes a best effort to setup the various debuggers with
+        -- reasonable debug configurations
+        automatic_setup = true,
+        automatic_installation = true,
+
+        -- You can provide additional configuration to the handlers,
+        -- see mason-nvim-dap README for more information
+        handlers = {},
+
+        -- You'll need to check that you have the required things installed
+        -- online, please don't ask me how to install them :)
+        ensure_installed = {
+          -- Update this to ensure that you have the debuggers for the langs you want
+          -- 'delve',
+          'debugpy',
+        },
+      }
+      dap.listeners.after.event_initialized['dapui_config'] = dapui.open
+      dap.listeners.before.event_terminated['dapui_config'] = dapui.close
+      dap.listeners.before.event_exited['dapui_config'] = dapui.close
+      -- fix: E5108: Error executing lua .../Local/nvim-data/lazy/nvim-dap-ui/lua/dapui/controls.lua:14: attempt to index local 'element' (a nil value)
+      -- see: https://github.com/rcarriga/nvim-dap-ui/issues/279#issuecomment-1596258077
+      require('dapui').setup()
+      require('dap-python').setup 'uv'
+    end,
   },
-  { 'jay-babu/mason-nvim-dap.nvim' },
 
   -- UI for the debugger
   -- * the debugger UI is also automatically opened when starting/stopping the debugger
@@ -791,16 +823,18 @@ require('lazy').setup({
   -- Configuration for the python debugger
   -- * configures debugpy for us
   -- * uses the debugpy installation from mason
-  -- {
-  --   'mfussenegger/nvim-dap-python',
-  --   dependencies = 'mfussenegger/nvim-dap',
-  --   config = function()
-  --     -- fix: E5108: Error executing lua .../Local/nvim-data/lazy/nvim-dap-ui/lua/dapui/controls.lua:14: attempt to index local 'element' (a nil value)
-  --     -- see: https://github.com/rcarriga/nvim-dap-ui/issues/279#issuecomment-1596258077
-  --     require('dapui').setup()
-  --     -- uses the debugypy installation by mason
-  --     require('dap-python').setup 'uv'
-  --   end,
+  --  {
+  -- 	"mfussenegger/nvim-dap-python",
+  -- 	dependencies = "mfussenegger/nvim-dap",
+  -- 	config = function()
+  -- 		-- fix: E5108: Error executing lua .../Local/nvim-data/lazy/nvim-dap-ui/lua/dapui/controls.lua:14: attempt to index local 'element' (a nil value)
+  -- 		-- see: https://github.com/rcarriga/nvim-dap-ui/issues/279#issuecomment-1596258077
+  -- 		require("dapui").setup()
+  -- 		-- uses the debugypy installation by mason
+  -- 		local debugpyPythonPath = require("mason-registry").get_package("debugpy"):get_install_path()
+  -- 			.. "/venv/bin/python3"
+  -- 		require("dap-python").setup(debugpyPythonPath, {}) ---@diagnostic disable-line: missing-fields
+  -- 	end,
   -- },
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
